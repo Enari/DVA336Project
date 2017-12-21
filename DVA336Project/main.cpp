@@ -2,44 +2,34 @@
 //  main.cpp
 //  DVA336Project
 //
-//  Created by Anton Roslund on 2017-12-05.
-//  Copyright © 2017 Anton Roslund. All rights reserved.
-//
 
-#include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
 #include "bitmap_image.hpp"
+#include <time.h>
+#include <pthread.h>
 
-void test01()
+// Number of threads
+#define P 4
+
+bitmap_image image;
+bitmap_image out;
+
+struct args
 {
-    std::string file_name("../../../../../DVA336Project/images/zerio.bmp");
-    
-    bitmap_image image(file_name);
-    
-    if (!image){
-        printf("test01() - Error - Failed to open '%s'\n",file_name.c_str());
-        return;
-    }
-    
-    image.save_image("../../../../../DVA336Project/images/test01_saved.bmp");
-}
+    int hStart;
+    int hEnd;
+    int wStart;
+    int wEnd;
+    int height;
+    int width;
+};
 
-void mean(){
-    std::string file_name("../../../../../DVA336Project/images/zerio.bmp");
+void* mean(void * args){
+    struct args params = *((struct args*)args);
     
-    bitmap_image image(file_name);
-    
-    if (!image){
-        printf("test01() - Error - Failed to open '%s'\n",file_name.c_str());
-        return;
-    }
-    
-    const unsigned int height = image.height();
-    const unsigned int width  = image.width();
-    
-    bitmap_image out(height, width);
-    
-    for (int y = 0; y < height; y++){
-        for (int x = 0; x < width; x++){
+    for (int y = params.hStart; y < params.hEnd; y++){
+        for (int x = params.wStart; x < params.wEnd; x++){
             int red = 0;
             int green = 0;
             int blue = 0;
@@ -48,7 +38,7 @@ void mean(){
             
             for(int i = x-1; i <= x+1; i++){
                 for(int j = y-1; j <= y+1; j++){
-                    if(i >= 0 && j >= 0 && i < height && j < width){
+                    if(i >= 0 && j >= 0 && i < params.height && j < params.width){
                         neighbors++;
                         image.get_pixel(i, j, colour);
                         
@@ -66,12 +56,52 @@ void mean(){
             
         }
     }
-    
-    out.save_image("../../../../../DVA336Project/images/out.bmp");
+    return NULL;
 }
 
 int main(int argc, const char * argv[]) {
-    mean();
+    pthread_t thread[P];
+    pthread_attr_t attr;
+    time_t time;
+    image = bitmap_image("../../../../../DVA336Project/images/zerio.bmp");
+    
+    if (!image){
+        printf("test01() - Error - Failed to open image\n");
+        return 1;
+    }
+    
+    int height = image.height();
+    int width = image.width();
+    
+    out = bitmap_image(width, height);
+    
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    
+    time = clock();
+    
+    for (int i = 0; i < 1; i++)
+    {
+        struct args* params = (struct args*)malloc(sizeof(struct args));
+        params->hStart = 0;
+        params->hEnd = height;
+        params->wStart = 0;
+        params->wEnd = width;
+        params->height = height;
+        params->width = width;
+        
+        pthread_create(&thread[i], &attr, &mean, (void*)params);
+    }
+    
+    //Join the fucking threads
+    for (int i = 0; i < P; i++) {
+        pthread_join(thread[i], NULL);
+    }
+    
+    out.save_image("../../../../../DVA336Project/images/out.bmp");
+    
+    time = clock() - time;
+    printf("time:%f\n", ((float)time/CLOCKS_PER_SEC));
     
     return 0;
 }
