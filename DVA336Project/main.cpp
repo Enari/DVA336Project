@@ -10,10 +10,11 @@
 #include <pthread.h>
 
 // Number of threads
-#define P 4
+#define P 2
 
-bitmap_image image;
+bitmap_image image = bitmap_image("../../../../../DVA336Project/images/house.bmp");
 bitmap_image out;
+rgb_t** inImage;
 
 struct args
 {
@@ -38,9 +39,9 @@ void* mean(void * args){
             
             for(int i = x-1; i <= x+1; i++){
                 for(int j = y-1; j <= y+1; j++){
-                    if(i >= 0 && j >= 0 && i < params.height && j < params.width){
+                    if(i >= 0 && j >= 0 && i < params.width && j < params.height){
                         neighbors++;
-                        image.get_pixel(i, j, colour);
+                        colour = inImage[i][j];
                         
                         red   += colour.red;
                         green += colour.green;
@@ -53,10 +54,25 @@ void* mean(void * args){
             blue  /= neighbors;
             colour = make_colour(red, green, blue);
             out.set_pixel(x, y, colour);
-            
         }
     }
     return NULL;
+}
+
+
+
+void loadPixelsToArray(){
+    inImage = (rgb_t**) malloc(image.height()*sizeof(rgb_t*));
+    
+    for (int i = 0; i < image.width(); i++) {
+        inImage[i] = (rgb_t*) malloc(image.width()*sizeof(rgb_t));
+    }
+    
+    for (int y = 0; y < image.height(); y++){
+        for (int x = 0; x < image.width(); x++){
+            image.get_pixel(y, x, inImage[y][x]);
+        }
+    }
 }
 
 int main(int argc, const char * argv[]) {
@@ -69,6 +85,7 @@ int main(int argc, const char * argv[]) {
         printf("test01() - Error - Failed to open image\n");
         return 1;
     }
+    loadPixelsToArray();
     
     int height = image.height();
     int width = image.width();
@@ -80,11 +97,11 @@ int main(int argc, const char * argv[]) {
     
     time = clock();
     
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < P; i++)
     {
         struct args* params = (struct args*)malloc(sizeof(struct args));
-        params->hStart = 0;
-        params->hEnd = height;
+        params->hStart = (i*height/P);
+        params->hEnd = (i*height/P)+(height/P);
         params->wStart = 0;
         params->wEnd = width;
         params->height = height;
@@ -93,15 +110,14 @@ int main(int argc, const char * argv[]) {
         pthread_create(&thread[i], &attr, &mean, (void*)params);
     }
     
-    //Join the fucking threads
+    //Join the threads
     for (int i = 0; i < P; i++) {
         pthread_join(thread[i], NULL);
     }
-    
-    out.save_image("../../../../../DVA336Project/images/out.bmp");
-    
     time = clock() - time;
     printf("time:%f\n", ((float)time/CLOCKS_PER_SEC));
+    
+    out.save_image("../../../../../DVA336Project/images/out.bmp");
     
     return 0;
 }
