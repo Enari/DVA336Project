@@ -6,31 +6,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "bitmap_image.hpp"
-#include <time.h>
-#include <pthread.h>
+#include <omp.h>
 
-// Number of threads
-#define P 2
+int main(int argc, const char * argv[]) {
 
-bitmap_image image = bitmap_image("../../../../../DVA336Project/images/house.bmp");
-bitmap_image out;
-rgb_t** inImage;
+    time_t time;
+    bitmap_image out image = bitmap_image("images/zerio.bmp");
+    if (!image){
+        printf("Error - Failed to open image\n");
+        return 1;
+    }
 
-struct args
-{
-    int hStart;
-    int hEnd;
-    int wStart;
-    int wEnd;
-    int height;
-    int width;
-};
+    int height = image.height();
+    int width = image.width();
 
-void* mean(void * args){
-    struct args params = *((struct args*)args);
+    bitmap_image out = bitmap_image(image.height(), image.height());
     
-    for (int y = params.hStart; y < params.hEnd; y++){
-        for (int x = params.wStart; x < params.wEnd; x++){
+    time = clock();
+    
+    #pragma opm parallel for static(image)
+    for (int y = 0; y < height; y++){
+        for (int x = 0; x < width; x++){
             int red = 0;
             int green = 0;
             int blue = 0;
@@ -39,9 +35,9 @@ void* mean(void * args){
             
             for(int i = x-1; i <= x+1; i++){
                 for(int j = y-1; j <= y+1; j++){
-                    if(i >= 0 && j >= 0 && i < params.width && j < params.height){
+                    if(i >= 0 && j >= 0 && i < height && j < width){
                         neighbors++;
-                        colour = inImage[i][j];
+                        image.get_pixel(i, j, colour);
                         
                         red   += colour.red;
                         green += colour.green;
@@ -54,70 +50,14 @@ void* mean(void * args){
             blue  /= neighbors;
             colour = make_colour(red, green, blue);
             out.set_pixel(x, y, colour);
+            
         }
     }
-    return NULL;
-}
 
-
-
-void loadPixelsToArray(){
-    inImage = (rgb_t**) malloc(image.height()*sizeof(rgb_t*));
-    
-    for (int i = 0; i < image.width(); i++) {
-        inImage[i] = (rgb_t*) malloc(image.width()*sizeof(rgb_t));
-    }
-    
-    for (int y = 0; y < image.height(); y++){
-        for (int x = 0; x < image.width(); x++){
-            image.get_pixel(y, x, inImage[y][x]);
-        }
-    }
-}
-
-int main(int argc, const char * argv[]) {
-    pthread_t thread[P];
-    pthread_attr_t attr;
-    time_t time;
-    image = bitmap_image("../../../../../DVA336Project/images/zerio.bmp");
-    
-    if (!image){
-        printf("test01() - Error - Failed to open image\n");
-        return 1;
-    }
-    loadPixelsToArray();
-    
-    int height = image.height();
-    int width = image.width();
-    
-    out = bitmap_image(width, height);
-    
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    
-    time = clock();
-    
-    for (int i = 0; i < P; i++)
-    {
-        struct args* params = (struct args*)malloc(sizeof(struct args));
-        params->hStart = (i*height/P);
-        params->hEnd = (i*height/P)+(height/P);
-        params->wStart = 0;
-        params->wEnd = width;
-        params->height = height;
-        params->width = width;
-        
-        pthread_create(&thread[i], &attr, &mean, (void*)params);
-    }
-    
-    //Join the threads
-    for (int i = 0; i < P; i++) {
-        pthread_join(thread[i], NULL);
-    }
     time = clock() - time;
     printf("time:%f\n", ((float)time/CLOCKS_PER_SEC));
     
-    out.save_image("../../../../../DVA336Project/images/out.bmp");
+    out.save_image("images/out.bmp");
     
     return 0;
 }
