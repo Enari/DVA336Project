@@ -11,20 +11,30 @@
 int main(int argc, const char * argv[]) {
 
     time_t time;
-    bitmap_image out image = bitmap_image("images/zerio.bmp");
+    bitmap_image image = bitmap_image("images/house.bmp");
     if (!image){
         printf("Error - Failed to open image\n");
         return 1;
     }
 
+
+    bitmap_image out = bitmap_image(image.height(), image.height());
+
+    time = clock();
+
     int height = image.height();
     int width = image.width();
 
-    bitmap_image out = bitmap_image(image.height(), image.height());
-    
-    time = clock();
-    
-    #pragma opm parallel for static(image)
+    #pragma omp parallel
+{
+    bitmap_image pimage = bitmap_image(image);
+
+    #pragma omp single
+    {
+	time = clock();
+    }
+
+    #pragma omp parallel for 
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
             int red = 0;
@@ -35,9 +45,9 @@ int main(int argc, const char * argv[]) {
             
             for(int i = x-1; i <= x+1; i++){
                 for(int j = y-1; j <= y+1; j++){
-                    if(i >= 0 && j >= 0 && i < height && j < width){
+                    if(i >= 0 && j >= 0 && i < width && j < height){
                         neighbors++;
-                        image.get_pixel(i, j, colour);
+                        pimage.get_pixel(i, j, colour);
                         
                         red   += colour.red;
                         green += colour.green;
@@ -53,9 +63,9 @@ int main(int argc, const char * argv[]) {
             
         }
     }
-
+}
     time = clock() - time;
-    printf("time:%f\n", ((float)time/CLOCKS_PER_SEC));
+    printf("%f\n", ((float)time/CLOCKS_PER_SEC));
     
     out.save_image("images/out.bmp");
     
