@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "bitmap_image.hpp"
-#include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 // Number of threads
@@ -79,6 +79,7 @@ int main(int argc, const char * argv[]) {
     pthread_t thread[P];
     pthread_attr_t attr;
     time_t time;
+    struct timeval t0, t1;
     image = bitmap_image("images/MARBLES.bmp");
     
     if (!image){
@@ -95,7 +96,7 @@ int main(int argc, const char * argv[]) {
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     
-    time = clock();
+    gettimeofday(&t0, NULL);
     
     for (int i = 0; i < P; i++)
     {
@@ -114,8 +115,11 @@ int main(int argc, const char * argv[]) {
     for (int i = 0; i < P; i++) {
         pthread_join(thread[i], NULL);
     }
-    time = clock() - time;
-    printf("time:%f\n", ((float)time/CLOCKS_PER_SEC));
+
+    gettimeofday(&t1, NULL);
+    long long elapsed = (t1.tv_sec-t0.tv_sec)*1000000LL + t1.tv_usec-t0.tv_usec;
+
+    printf("day:%lf\n", elapsed);
     
     out.save_image("images/out.bmp");
     

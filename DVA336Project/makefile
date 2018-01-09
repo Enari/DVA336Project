@@ -5,4 +5,4 @@ CLIBS= -pthread
 all: main
 
 main: main.cpp
-	$(CC) $(CLIBS) -Ofast -o $@ $@.cpp
+	$(CC) $(CLIBS) -o $@ $@.cpp
