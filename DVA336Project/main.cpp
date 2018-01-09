@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "bitmap_image.hpp"
 #include <omp.h>
+#include <sys/time.h>
 
 #define SIDE 1000
 
@@ -44,6 +45,8 @@ int main(int argc, const char * argv[]) {
   }
 
   //time = clock();
+  struct timeval start, end;
+  
 
   // Caclulate shit
   #pragma omp parallel
@@ -71,6 +74,7 @@ int main(int argc, const char * argv[]) {
     #pragma omp single
     {
       time = clock();
+      gettimeofday(&start, NULL);
     }
 
     #pragma omp for
@@ -104,6 +108,10 @@ int main(int argc, const char * argv[]) {
 
   time = clock() - time;
   printf("%f\n", ((float)time/CLOCKS_PER_SEC));
+  gettimeofday(&end, NULL);
+  float delta = ((end.tv_sec  - start.tv_sec) * 1000000u + 
+         end.tv_usec - start.tv_usec) / 1.e6;
+  printf("\n%f\n", delta);
   
   int height = SIDE;
   int width = SIDE;
