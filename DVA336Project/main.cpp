@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 // Number of threads
-#define P 2
+#define P 4
 
 bitmap_image image = bitmap_image("images/MARBLES.bmp");
 bitmap_image out;
@@ -79,7 +79,7 @@ int main(int argc, const char * argv[]) {
     pthread_t thread[P];
     pthread_attr_t attr;
     time_t time;
-    struct timeval t0, t1;
+    struct timeval start, end;
     image = bitmap_image("images/MARBLES.bmp");
     
     if (!image){
@@ -96,7 +96,7 @@ int main(int argc, const char * argv[]) {
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     
-    gettimeofday(&t0, NULL);
+    gettimeofday(&start, NULL);
     
     for (int i = 0; i < P; i++)
     {
@@ -116,10 +116,11 @@ int main(int argc, const char * argv[]) {
         pthread_join(thread[i], NULL);
     }
 
-    gettimeofday(&t1, NULL);
-    long long elapsed = (t1.tv_sec-t0.tv_sec)*1000000LL + t1.tv_usec-t0.tv_usec;
+    gettimeofday(&end, NULL);
+    float delta = ((end.tv_sec  - start.tv_sec) * 1000000u + 
+         end.tv_usec - start.tv_usec) / 1.e6;
 
-    printf("day:%lf\n", elapsed);
+    printf("day:%f\n", delta);
     
     out.save_image("images/out.bmp");
     
