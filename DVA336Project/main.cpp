@@ -30,8 +30,6 @@ void loadPixelsToArray(){
 }
 
 int main(int argc, const char * argv[]) {
-    pthread_t thread[P];
-    pthread_attr_t attr;
     time_t time;
     struct timeval start, end;
     image = bitmap_image("images/MARBLES.bmp");
