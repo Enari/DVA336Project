@@ -45,9 +45,6 @@ int main(int argc, const char * argv[]) {
     
     out = bitmap_image(width, height);
     
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    
     gettimeofday(&start, NULL);
     
     for (int y = 0; y < height; y++){
